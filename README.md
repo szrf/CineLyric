@@ -41,7 +41,61 @@ MuoniumPlayer 与 DangoMusic 装其一即可，都装也可以（自动检测正
 
 镜头播放中按 L 会先结束这次镜头再打开设置，重新按 L 即可重新打开——Ji 在打开任何界面时本来就会退场。
 
+
+
 ## 从源码构建
 
 ```powershell
 ./build.ps1
+```
+
+`build.ps1` 顶部写死了 Minecraft 库目录（`$lib`）；换成你自己 `.minecraft/libraries` 的路径。
+它还会从 `..` 读 `MuoniumPlayer-1.21.1-neoforge-2.5.2.jar` 作为编译依赖（只用到类名，没有运行时依赖）；
+没有这个 jar 就把那一行删掉，编译会跳过 Muonium 后端。
+
+两个坑：
+
+- `build.ps1` 必须保存为 **UTF-8 with BOM**（Windows PowerShell 5.1 否则按 ANSI 读中文路径）。
+- `neoforge.mods.toml` / `*.json` **不能**带 BOM，否则 FML 报 `not a valid mod file`。
+
+产物是 `build/CineLyric-NeoForge-1.21.1-1.0.1.jar`。
+
+## 目录结构
+
+```
+CineLyric-NeoForge-1.21.1-1.0.1/
+├─ CineLyric-NeoForge-1.21.1-1.0.1.jar   可直接放进 mods 的成品
+├─ 安装说明.txt                          玩家向说明（功能 / 安装 / 版本）
+├─ 上传到GitHub.md                       把这个项目传到 GitHub 的步骤
+├─ LICENSE / 协议说明.txt                 MIT
+├─ build.ps1                             构建脚本（需要改 $lib 路径）
+└─ 源码/src/main/java/com/cinelyric/     全部源代码
+```
+
+## 实现要点
+
+- 注入点：`com.ji.afkcinematic.variants.v1_21_1.render.LetterboxRenderer#render(GuiGraphics)` 的 TAIL（Ji 两个入口画黑边最终都走这里；早先挂在 `renderFromHud` 上，只有「隐藏 HUD」那条路径会画到）
+  （`@Mixin(targets = ...)`, `remap = false`，字符串目标避开「不能 mixin 另一个 mixin」的问题）。
+- 歌词来源：Muonium 每次按播放进度 `findCurrentLyric` 重算（旧版用它 HUD 刷新的 `currentLyric`，
+  Ji 隐藏 HUD 后会冻结）；Dango 走反射读它的歌词缓存（1.1.4 起所有反射成员都显式 setAccessible）。
+  两个后端各自独立类加载，只装其中一个也能正常启动。
+  `auto` 模式先只在「正在播放」的后端里按 Muonium → Dango 顺序取行，都为空才退回暂停时的最后一行。
+- 3D 歌词锚点：Dango 用它平台层的 `getPlayer()` 取得「眼睛位置 + 朝向」后按视角摆放世界歌词。
+  `DangoPlatformMixin` 注入 `me.sorihiko.dango.modern.ModernPlatform#getPlayer` 的 RETURN：
+  Ji 的 `CinematicManager.getState()` 为 `CINEMATIC_ACTIVE`（或黑边可见，作为兼容兜底）时，
+  返回 `gameRenderer.getMainCamera()` 的机位与 `yaw/pitch` 组成的 `PlayerPose`，否则原样返回。
+  两侧都走反射 / 字符串 mixin 目标，没有编译期依赖。
+- 文字按**物理像素**栅格化（`窗口缩放 × GUI 缩放 × 2`）再贴回，避免大分辨率下发糊。
+- 颜色与透明度烘进纹理像素，而不是用 `setColor` 着色——后者对 `blit` 无效。
+- 透明像素填字的颜色（颜色外扩）：直通 alpha 的纹理在缩放采样时会把白色和透明黑插值成灰，
+  看起来像每个字外面一圈黑描边；外扩后插值只在同色之间进行，只剩平滑的透明过渡。
+
+## 协议
+
+MIT，见 [LICENSE](LICENSE) 与 [协议说明.txt](协议说明.txt)。
+
+- 每个源文件头部都带 `SPDX-License-Identifier: MIT`，方便单独摘出去用。
+- 模组 jar 里也打了一份 LICENSE（`META-INF/LICENSE`），分发时不会漏掉协议文本。
+- `neoforge.mods.toml` 的 `license` 字段同样是 `MIT`。
+- 在 GitHub 上建仓库时会自动识别根目录的 `LICENSE`，仓库页面会显示 **MIT license**。
+
