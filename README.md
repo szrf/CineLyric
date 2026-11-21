@@ -4,7 +4,7 @@
 Ji 播放镜头时会取消整个 HUD，CineLyric 直接注入它的黑边渲染末尾，把当前歌词重新画上去。
 它本身不播放音乐、也不渲染电影镜头，只负责「画字」这一件事。
 
-当前版本仅支持 **NeoForge 1.21.1**（只测试了 NeoForge **21.1.2.67**）。
+当前版本仅支持 **NeoForge 1.21.1**（只测试了 NeoForge **21.1.267**）。
 
 ## 适配
 
@@ -33,7 +33,7 @@ MuoniumPlayer 与 DangoMusic 装其一即可，都装也可以（自动检测正
 
 ## 安装
 
-1. Minecraft 1.21.1 + NeoForge 21.1（实测 21.1.2.67）。
+1. Minecraft 1.21.1 + NeoForge 21.1（实测 21.1.267）。
 2. 建议安装 Ji AFK Cinematic，以及 MuoniumPlayer 或 DangoMusic 其中之一（都不装也能启动，只是没有效果）。
    Muonium 还需要它依赖的 Kotlin for Forge。
 3. 把 `CineLyric-NeoForge-1.21.1-1.0.1.jar` 放进 `.minecraft/mods/`。
