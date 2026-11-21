@@ -1,4 +1,4 @@
-﻿# CineLyric build script (compile against the local PCL2 library jars, no Gradle needed)
+# CineLyric build script (compile against the local PCL2 library jars, no Gradle needed)
 # Run from Windows PowerShell:  powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
 # (UTF-8 with BOM so Windows PowerShell 5.1 decodes the Chinese paths correctly)
 $ErrorActionPreference = 'Stop'
@@ -17,10 +17,12 @@ $classpath = @(
     "$lib\net\neoforged\neoforge\21.1.233\neoforge-21.1.233-universal.jar",
     "$lib\com\google\code\gson\gson\2.10.1\gson-2.10.1.jar",
     "$lib\com\mojang\brigadier\1.3.10\brigadier-1.3.10.jar",
+    "$lib\com\mojang\datafixerupper\8.0.16\datafixerupper-8.0.16.jar",
+    "$lib\org\joml\joml\1.10.5\joml-1.10.5.jar",
     "$lib\net\fabricmc\sponge-mixin\0.16.4+mixin.0.8.7\sponge-mixin-0.16.4+mixin.0.8.7.jar",
     "$lib\org\ow2\asm\asm\9.10.1\asm-9.10.1.jar",
     "$lib\org\ow2\asm\asm-tree\9.10.1\asm-tree-9.10.1.jar",
-    (Join-Path $root '..\MuoniumPlayer-1.21.1-neoforge-2.5.2.jar')
+    (Join-Path $root '..\依赖库\MuoniumPlayer-1.21.1-neoforge-2.5.2.jar')
 ) -join ';'
 
 $buildDir = Join-Path $root 'build'
@@ -37,7 +39,7 @@ if ($LASTEXITCODE -ne 0) { throw "javac failed with exit code $LASTEXITCODE" }
 
 Copy-Item (Join-Path $root 'src\main\resources\*') $classes -Recurse -Force
 
-$outJar = Join-Path $buildDir 'CineLyric-NeoForge-1.21.1-1.0.1.jar'
+$outJar = Join-Path $buildDir 'CineLyric-NeoForge-1.21.1-1.0.2.jar'
 & $jar --create --file $outJar -C $classes .
 if ($LASTEXITCODE -ne 0) { throw "jar failed with exit code $LASTEXITCODE" }
 
