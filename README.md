@@ -65,7 +65,6 @@ MuoniumPlayer 与 DangoMusic 装其一即可，都装也可以（自动检测正
 ```
 CineLyric-NeoForge-1.21.1-1.0.1/
 ├─ CineLyric-NeoForge-1.21.1-1.0.1.jar   可直接放进 mods 的成品
-├─ 安装说明.txt                          玩家向说明（功能 / 安装 / 版本）
 ├─ 上传到GitHub.md                       把这个项目传到 GitHub 的步骤
 ├─ LICENSE / 协议说明.txt                 MIT
 ├─ build.ps1                             构建脚本（需要改 $lib 路径）
@@ -99,3 +98,9 @@ MIT，见 [LICENSE](LICENSE) 与 [协议说明.txt](协议说明.txt)。
 - `neoforge.mods.toml` 的 `license` 字段同样是 `MIT`。
 - 在 GitHub 上建仓库时会自动识别根目录的 `LICENSE`，仓库页面会显示 **MIT license**。
 
+## 📥 下载
+
+<!Download Latest Release>
+<!All Releases>
+
+> 点击上方按钮下载最新版本，或查看全部历史版本。
