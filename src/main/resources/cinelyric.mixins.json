@@ -1,0 +1,14 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "com.cinelyric.mixin",
+  "plugin": "com.cinelyric.CineLyricMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "LetterboxRendererMixin",
+    "DangoPlatformMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

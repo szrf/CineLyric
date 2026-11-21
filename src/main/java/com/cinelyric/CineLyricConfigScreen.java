@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -48,13 +49,11 @@ public class CineLyricConfigScreen extends CineLyricScreen {
         addRenderableWidget(new IntSlider(left, top + ROW * row++, width, "字号",
                 CineLyricConfig.FONT_MIN, CineLyricConfig.FONT_MAX, CineLyricConfig.fontSize, value -> {
                     CineLyricConfig.fontSize = value;
-                    TextTexture.clear();
                 }));
 
         addRenderableWidget(new IntSlider(left, top + ROW * row++, width, "字间距",
                 0, 6, CineLyricConfig.letterSpacing, value -> {
                     CineLyricConfig.letterSpacing = value;
-                    TextTexture.clear();
                 }));
 
         addRenderableWidget(Button.builder(engineLabel(), button -> {
@@ -72,15 +71,24 @@ public class CineLyricConfigScreen extends CineLyricScreen {
             rebuildWidgets();
         }).bounds(left, top + ROW * row++, width, 20).build());
 
-        addRenderableWidget(Button.builder(Component.literal("显示译文…"), button -> openTranslation())
-                .bounds(left, top + ROW * row++, width, 20).build());
+        Button translationButton = Button.builder(Component.literal("译文设置…"),
+                        button -> openTranslation())
+                .bounds(left, top + ROW * row++, width, 20).build();
+        translationButton.setTooltip(Tooltip.create(Component.literal(
+                "译文字号、显示开关、位置和中文自动跳过")));
+        addRenderableWidget(translationButton);
+
+        Button titles = Button.builder(Component.literal("歌名显示…"), button -> openTitles())
+                .bounds(left, top + ROW * row++, width, 20).build();
+        titles.setTooltip(Tooltip.create(Component.literal(
+                "歌名开关、字号、位置、颜色和前缀图标")));
+        addRenderableWidget(titles);
 
         addRenderableWidget(Button.builder(delayLabel(), button -> openDelay())
                 .bounds(left, top + ROW * row++, width, 20).build());
 
         addRenderableWidget(Button.builder(shadowLabel(), button -> {
             CineLyricConfig.shadow = !CineLyricConfig.shadow;
-            TextTexture.clear();
             button.setMessage(shadowLabel());
         }).bounds(left, top + ROW * row++, width, 20).build());
 
@@ -132,6 +140,14 @@ public class CineLyricConfigScreen extends CineLyricScreen {
         }
         CineLyricConfig.save();
         minecraft.setScreen(new CineLyricDelayScreen(this));
+    }
+
+    private void openTitles() {
+        if (minecraft == null) {
+            return;
+        }
+        CineLyricConfig.save();
+        minecraft.setScreen(new CineLyricTitleScreen(this));
     }
 
     private static Component delayLabel() {
@@ -189,12 +205,16 @@ public class CineLyricConfigScreen extends CineLyricScreen {
             next = FontLibrary.CUSTOM;
         } else if (FontLibrary.CUSTOM.equals(CineLyricConfig.fontSource)) {
             next = FontLibrary.PLAYER;
+        } else if (FontLibrary.PLAYER.equals(CineLyricConfig.fontSource)) {
+            // The explicit "现代化UI 接管" entry is gone: vanilla text is drawn by ModernUI
+            // anyway whenever it is installed, so it was a duplicate of 原版 with a confusing
+            // label. Three engines remain: 原版 / 自定义 / 播放器.
+            next = FontLibrary.AUTO;
         } else {
             next = FontLibrary.AUTO;
         }
         CineLyricConfig.fontSource = next;
         CineLyricConfig.ensureFontSelection();
-        TextTexture.clear();
     }
 
     static void openFontsFolder() {
@@ -244,6 +264,14 @@ public class CineLyricConfigScreen extends CineLyricScreen {
             String missing = "需要 Ji AFK Cinematic + 音乐播放器（Muonium / Dango）";
             graphics.drawString(font, missing, width - font.width(missing) - 6, 6, 0xFF8080, false);
         }
+        if (FontLibrary.CUSTOM.equals(CineLyricConfig.fontSource)) {
+            String warn1 = "⚠ 自定义字体模式可能出现缺字";
+            String warn2 = "作者不打算维护或修复此问题";
+            int warnX = width - font.width(warn1) - 6;
+            int warnY = modsPresent() ? 6 : 30;
+            graphics.drawString(font, warn1, warnX, warnY, 0xFFB040, true);
+            graphics.drawString(font, warn2, warnX, warnY + 12, 0xFFB040, true);
+        }
     }
 
     private static boolean modsPresent() {
@@ -266,6 +294,7 @@ public class CineLyricConfigScreen extends CineLyricScreen {
         paintCinematicBars(graphics);
         CineLyricOverlay.drawLines(graphics, CineLyricOverlay.SAMPLE_MAIN,
                 CineLyricOverlay.SAMPLE_TRANSLATION, CineLyricOverlay.previewAlpha());
+        SongTitleRenderer.drawPreview(graphics);
     }
 
     @Override
@@ -286,13 +315,29 @@ public class CineLyricConfigScreen extends CineLyricScreen {
         private final int min;
         private final int max;
         private final IntConsumer consumer;
+        private final String zeroLabel;
+        private final java.util.function.IntUnaryOperator normalize;
 
         IntSlider(int x, int y, int width, String label, int min, int max, int initial, IntConsumer consumer) {
-            super(x, y, width, 20, Component.empty(), (initial - min) / (double) (max - min));
+            this(x, y, width, label, min, max, initial, consumer, null, null);
+        }
+
+        IntSlider(int x, int y, int width, String label, int min, int max, int initial,
+                  IntConsumer consumer, String zeroLabel) {
+            this(x, y, width, label, min, max, initial, consumer, zeroLabel, null);
+        }
+
+        IntSlider(int x, int y, int width, String label, int min, int max, int initial,
+                  IntConsumer consumer, String zeroLabel,
+                  java.util.function.IntUnaryOperator normalize) {
+            super(x, y, width, 20, Component.empty(),
+                    (Math.max(min, Math.min(max, initial)) - min) / (double) (max - min));
             this.label = label;
             this.min = min;
             this.max = max;
             this.consumer = consumer;
+            this.zeroLabel = zeroLabel;
+            this.normalize = normalize;
             updateMessage();
         }
 
@@ -301,7 +346,8 @@ public class CineLyricConfigScreen extends CineLyricScreen {
             if (label == null) {
                 return;
             }
-            setMessage(Component.literal(label + "：" + current()));
+            String value = current() == 0 && zeroLabel != null ? zeroLabel : String.valueOf(current());
+            setMessage(Component.literal(label + "：" + value));
         }
 
         @Override
@@ -310,7 +356,8 @@ public class CineLyricConfigScreen extends CineLyricScreen {
         }
 
         private int current() {
-            return (int) Math.round(min + value * (max - min));
+            int raw = (int) Math.round(min + value * (max - min));
+            return normalize == null ? raw : normalize.applyAsInt(raw);
         }
     }
 

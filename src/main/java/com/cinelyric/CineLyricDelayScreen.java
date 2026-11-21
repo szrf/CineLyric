@@ -20,7 +20,7 @@ public class CineLyricDelayScreen extends CineLyricScreen {
 
     private static final int PANEL_WIDTH = 236;
     private static final int PANEL_TOP = 4;
-    private static final int PANEL_BOTTOM = 144;
+    private static final int PANEL_BOTTOM = 170;
 
     private final CineLyricConfigScreen parent;
 
@@ -32,7 +32,7 @@ public class CineLyricDelayScreen extends CineLyricScreen {
     @Override
     protected void init() {
         suppressBlur();
-        CineLyricOverlay.beginPreview();
+        CineLyricOverlay.beginDelayPreview();
         int left = 12;
         int width = PANEL_WIDTH - 24;
 
@@ -47,8 +47,13 @@ public class CineLyricDelayScreen extends CineLyricScreen {
             rebuildWidgets();
         }).bounds(left, 86, width, 20).build());
 
+        addRenderableWidget(Button.builder(followLabel(), button -> {
+            CineLyricConfig.songTitleNoteFollowsDelay = !CineLyricConfig.songTitleNoteFollowsDelay;
+            button.setMessage(followLabel());
+        }).bounds(left, 112, width, 20).build());
+
         addRenderableWidget(Button.builder(Component.literal("返回"), button -> onClose())
-                .bounds(left, 112, width, 20).build());
+                .bounds(left, 138, width, 20).build());
     }
 
     @Override
@@ -58,6 +63,7 @@ public class CineLyricDelayScreen extends CineLyricScreen {
         paintCinematicBars(graphics);
         CineLyricOverlay.drawLines(graphics, CineLyricOverlay.SAMPLE_MAIN,
                 CineLyricOverlay.SAMPLE_TRANSLATION, CineLyricOverlay.previewAlpha());
+        SongTitleRenderer.drawPreview(graphics, true);
 
         graphics.fill(4, PANEL_TOP, PANEL_WIDTH, PANEL_BOTTOM, 0xD0000000);
         super.render(graphics, mouseX, mouseY, partialTick);
@@ -85,6 +91,11 @@ public class CineLyricDelayScreen extends CineLyricScreen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    private static Component followLabel() {
+        return Component.literal("音符跟随歌名延迟："
+                + (CineLyricConfig.songTitleNoteFollowsDelay ? "开" : "关（音符立即显示）"));
     }
 
     /** 0 = off, otherwise 0.5 s .. 60 s in half-second steps. */

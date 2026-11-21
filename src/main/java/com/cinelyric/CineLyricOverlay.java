@@ -6,9 +6,6 @@
  */
 package com.cinelyric;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 
 /**
@@ -21,12 +18,12 @@ public final class CineLyricOverlay {
     public static final String SAMPLE_MAIN = "How many people loved your youthful face";
     public static final String SAMPLE_TRANSLATION = "多少人曾爱慕你年轻时的容颜";
 
-    private static final float TRANSLATION_RATIO = 0.78F;
     private static boolean loggedActive;
     private static boolean loggedError;
 
     /** When the current subtitle run started; used by the experimental delay feature. */
     private static long sessionStart;
+    private static boolean previewDelay;
     private static long lastSeen;
     private static long lastNullNote;
     private static boolean dumpedOnce;
@@ -39,6 +36,7 @@ public final class CineLyricOverlay {
     public static void render(GuiGraphics graphics) {
         try {
             drawCurrentLyric(graphics);
+            SongTitleRenderer.draw(graphics);
         } catch (Throwable failure) {
             if (!loggedError) {
                 loggedError = true;
@@ -101,8 +99,15 @@ public final class CineLyricOverlay {
         return (now - sessionStart) / 1_000_000L >= delay;
     }
 
-    /** Starts the delay countdown when a settings page opens. */
+    /** Starts the delay countdown when a settings page opens. Preview delay is off. */
     public static void beginPreview() {
+        previewDelay = false;
+        sessionStart = System.nanoTime();
+    }
+
+    /** Starts the delay countdown for the dedicated delay page, where the preview honours it. */
+    public static void beginDelayPreview() {
+        previewDelay = true;
         sessionStart = System.nanoTime();
     }
 
@@ -113,7 +118,7 @@ public final class CineLyricOverlay {
 
     /** Sample subtitle opacity for the settings preview (0 while the delay runs). */
     public static float previewAlpha() {
-        return delayElapsed() ? 1.0F : 0.0F;
+        return !previewDelay || delayElapsed() ? 1.0F : 0.0F;
     }
 
     /** Shared by the overlay and the settings preview. */
@@ -138,15 +143,13 @@ public final class CineLyricOverlay {
         double maxWidth = width * CineLyricConfig.MAX_WIDTH_RATIO;
 
         int mainSize = CineLyricConfig.fontSize;
-        int subSize = Math.max(4, Math.round(mainSize * TRANSLATION_RATIO));
+        int subSize = CineLyricConfig.translationFontSize > 0
+                ? Math.max(CineLyricConfig.TITLE_FONT_MIN,
+                        Math.min(CineLyricConfig.TITLE_FONT_MAX, CineLyricConfig.translationFontSize))
+                : mainSize;
 
-        TextTexture.Entry mainTexture = main.isEmpty() ? null
-                : prepare(main, mainSize, CineLyricConfig.color, alpha);
-        TextTexture.Entry subTexture = sub.isEmpty() ? null
-                : prepare(sub, subSize, CineLyricConfig.translationColor, alpha);
-
-        int mainHeight = main.isEmpty() ? 0 : textHeight(mainTexture, mainSize);
-        int subHeight = sub.isEmpty() ? 0 : textHeight(subTexture, subSize);
+        int mainHeight = main.isEmpty() ? 0 : textHeight(mainSize);
+        int subHeight = sub.isEmpty() ? 0 : textHeight(subSize);
         int gap = main.isEmpty() || sub.isEmpty() ? 0
                 : Math.max(0, mainSize / 6 + CineLyricConfig.translationOffset);
         int blockHeight = mainHeight + gap + subHeight;
@@ -181,11 +184,11 @@ public final class CineLyricOverlay {
                 : width / 2 + (int) Math.round(width * (CineLyricConfig.xPercent / 100.0));
 
         if (!main.isEmpty()) {
-            draw(graphics, main, mainTexture, mainSize, centerX, mainTop, maxWidth, width,
+            LyricTextRenderer.draw(graphics, main, mainSize, centerX, mainTop, maxWidth, width,
                     CineLyricConfig.color, alpha);
         }
         if (!sub.isEmpty()) {
-            draw(graphics, sub, subTexture, subSize, centerX, subTop, maxWidth, width,
+            LyricTextRenderer.draw(graphics, sub, subSize, centerX, subTop, maxWidth, width,
                     CineLyricConfig.translationColor, alpha);
         }
     }
@@ -205,7 +208,7 @@ public final class CineLyricOverlay {
         return Math.max(barTop, top);
     }
 
-    /** Translation above the lyric line is the default; below is the other option. */
+    /** Original on top and translation underneath by default; the other order is opt-in. */
     static boolean translationAbove() {
         return !"below".equalsIgnoreCase(CineLyricConfig.translationSide);
     }
@@ -234,60 +237,13 @@ public final class CineLyricOverlay {
         return "top".equalsIgnoreCase(CineLyricConfig.barSide);
     }
 
-    private static TextTexture.Entry prepare(String text, int size, int rgb, float alpha) {
-        return TextTexture.get(text, CineLyricConfig.fontSource, CineLyricConfig.fontPrimary,
-                CineLyricConfig.fontSecondary, size, CineLyricConfig.shadow, rgb, alpha);
-    }
-
-    private static int textHeight(TextTexture.Entry texture, int size) {
-        if (texture != null) {
-            return Math.max(1, Math.round(texture.guiHeight()));
-        }
-        // Vanilla bitmap font: 9 GUI units tall at scale 1.
-        return Math.max(1, Math.round(size));
-    }
-
-    private static void draw(GuiGraphics graphics, String text, TextTexture.Entry texture, int size,
-                             int centerX, int topY, double maxWidth, int screenWidth, int rgb, float alpha) {
-        if (texture != null) {
-            float textWidth = texture.guiWidth();
-            float fit = (float) Math.min(1.0, maxWidth / Math.max(1.0, textWidth));
-            float scale = texture.unitsPerTexel * fit;
-            float fittedWidth = textWidth * fit;
-            float left = clampLeft(Math.round(centerX - fittedWidth / 2.0F), fittedWidth, screenWidth);
-            PoseStack pose = graphics.pose();
-            pose.pushPose();
-            pose.translate(left, topY, 0.0F);
-            pose.scale(scale, scale, 1.0F);
-            // Colour and opacity are baked into the texture, so the blit needs no shader tint.
-            // Full-size blit: the short overload assumes a 256x256 atlas, which would sample
-            // a wrong UV region (and wrap) for a long lyric line -> "colour TV static".
-            graphics.blit(texture.id, 0, 0, 0.0F, 0.0F, texture.width, texture.height,
-                    texture.width, texture.height);
-            pose.popPose();
-            return;
-        }
-        Minecraft minecraft = Minecraft.getInstance();
-        Font font = minecraft.font;
-        float scale = size / 9.0F;
-        float fit = (float) Math.min(1.0, maxWidth / Math.max(1.0, font.width(text) * scale));
-        float finalScale = scale * fit;
-        float textWidth = font.width(text) * finalScale;
-        float left = clampLeft(Math.round(centerX - textWidth / 2.0F), textWidth, screenWidth);
-        PoseStack pose = graphics.pose();
-        pose.pushPose();
-        pose.translate(left, topY, 0.0F);
-        pose.scale(finalScale, finalScale, 1.0F);
-        int color = withAlpha(rgb, alpha);
-        graphics.drawString(font, text, 0, 0, color, CineLyricConfig.shadow);
-        pose.popPose();
-    }
-
-    private static float clampLeft(float left, float textWidth, int screenWidth) {
-        if (textWidth >= screenWidth - 8) {
-            return 4.0F;
-        }
-        return Math.max(4.0F, Math.min(screenWidth - 4.0F - textWidth, left));
+    /**
+     * The real line box of the active font: vanilla is 9 px, a custom TTF can have a taller
+     * ascent/descent. The position screen and the two-line block use this so the selected
+     * vertical position matches what is drawn.
+     */
+    private static int textHeight(int size) {
+        return LyricTextRenderer.lineHeight(size);
     }
 
     /** True when the "translation" is just the same line again. */

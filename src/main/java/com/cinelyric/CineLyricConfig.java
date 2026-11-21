@@ -24,8 +24,39 @@ public final class CineLyricConfig {
     public static String fontPrimary = "";
     public static String fontSecondary = "";
     public static int fontSize = 9;
+    /** Separate size for the translation line; 0 follows the main line size. */
+    public static int translationFontSize = 0;
     /** Extra pixels between characters; 0 is normal tracking. */
     public static int letterSpacing = 0;
+
+    /** Draw the current song title above the lyric line. */
+    public static boolean showSongTitle = true;
+    /** Independent song-title font size. */
+    public static int songTitleSize = 12;
+    /** Independent pixels between title characters (does not affect the icon). */
+    public static int songTitleLetterSpacing = 0;
+    /** left / center / right / custom */
+    public static String songTitleAlign = "center";
+    /** Pixel offsets of the whole title block from the screen centre (custom mode only). */
+    public static int songTitleX = 0;
+    public static int songTitleY = 0;
+    /** Rainbow/flowing colour instead of white. */
+    public static boolean songTitleColorful = false;
+    /** none / note (album art was removed in the final icon design) */
+    public static String songTitleIcon = "note";
+    /** 0 means "same as the title line height". */
+    public static int songTitleIconWidth = 0;
+    public static int songTitleIconHeight = 0;
+    public static int songTitleIconGap = 4;
+    public static int songTitleIconOffsetY = 0;
+    /** Animate the note hue; off uses a fixed white note. */
+    public static boolean songTitleNoteColor = true;
+    /** Animate the note up/down; off keeps it still. */
+    public static boolean songTitleNoteBounce = true;
+    /** Peak vertical bounce in pixels. */
+    public static int songTitleNoteBounceAmount = 2;
+    /** True = the note hides together with a delayed title; false = note shows immediately. */
+    public static boolean songTitleNoteFollowsDelay = true;
     /** Distance from the bar's outer edge to the first text line, in percent of screen height. */
     public static double yPercent = 4.0;
     /** Horizontal offset in percent of screen width, positive moves right. */
@@ -35,6 +66,8 @@ public final class CineLyricConfig {
     /** GLFW key code of the settings hotkey; the KeyMapping stays the source of truth when possible. */
     public static int keyCode = 76; // L (clashes with the vanilla advancements key, by request)
     public static boolean showTranslation = true;
+    /** Skip the translated line entirely when the original lyric already contains Chinese. */
+    public static boolean skipChineseTranslation = true;
     /** Extra vertical offset of the translation line, in pixels (negative moves it up). */
     public static int translationOffset = 0;
     /**
@@ -62,6 +95,9 @@ public final class CineLyricConfig {
 
     public static final int FONT_MIN = 5;
     public static final int FONT_MAX = 15;
+    /** Title / translation controls use a wider range than the lyric line. */
+    public static final int TITLE_FONT_MIN = 8;
+    public static final int TITLE_FONT_MAX = 32;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
 
@@ -77,12 +113,30 @@ public final class CineLyricConfig {
         String fontPrimary = CineLyricConfig.fontPrimary;
         String fontSecondary = CineLyricConfig.fontSecondary;
         int fontSize = CineLyricConfig.fontSize;
+        int translationFontSize = CineLyricConfig.translationFontSize;
         int letterSpacing = CineLyricConfig.letterSpacing;
+        Boolean showSongTitle = CineLyricConfig.showSongTitle;
+        int songTitleSize = CineLyricConfig.songTitleSize;
+        int songTitleLetterSpacing = CineLyricConfig.songTitleLetterSpacing;
+        String songTitleAlign = CineLyricConfig.songTitleAlign;
+        int songTitleX = CineLyricConfig.songTitleX;
+        int songTitleY = CineLyricConfig.songTitleY;
+        boolean songTitleColorful = CineLyricConfig.songTitleColorful;
+        String songTitleIcon = CineLyricConfig.songTitleIcon;
+        int songTitleIconWidth = CineLyricConfig.songTitleIconWidth;
+        int songTitleIconHeight = CineLyricConfig.songTitleIconHeight;
+        int songTitleIconGap = CineLyricConfig.songTitleIconGap;
+        int songTitleIconOffsetY = CineLyricConfig.songTitleIconOffsetY;
+        boolean songTitleNoteColor = CineLyricConfig.songTitleNoteColor;
+        boolean songTitleNoteBounce = CineLyricConfig.songTitleNoteBounce;
+        int songTitleNoteBounceAmount = CineLyricConfig.songTitleNoteBounceAmount;
+        boolean songTitleNoteFollowsDelay = CineLyricConfig.songTitleNoteFollowsDelay;
         double yPercent = CineLyricConfig.yPercent;
         double xPercent = CineLyricConfig.xPercent;
         String barSide = CineLyricConfig.barSide;
         int keyCode = CineLyricConfig.keyCode;
         boolean showTranslation = CineLyricConfig.showTranslation;
+        Boolean skipChineseTranslation = CineLyricConfig.skipChineseTranslation;
         int translationOffset = CineLyricConfig.translationOffset;
         String translationSide = CineLyricConfig.translationSide;
         boolean sideMigrated = CineLyricConfig.sideMigrated;
@@ -110,12 +164,32 @@ public final class CineLyricConfig {
             fontPrimary = data.fontPrimary == null ? "" : data.fontPrimary;
             fontSecondary = data.fontSecondary == null ? "" : data.fontSecondary;
             fontSize = clamp(data.fontSize, FONT_MIN, FONT_MAX);
+            // 0 is meaningful: follow the main line size.
+            translationFontSize = data.translationFontSize <= 0 ? 0
+                    : clamp(data.translationFontSize, TITLE_FONT_MIN, TITLE_FONT_MAX);
             letterSpacing = clamp(data.letterSpacing, 0, 6);
+            showSongTitle = data.showSongTitle == null || data.showSongTitle;
+            songTitleSize = clamp(data.songTitleSize, TITLE_FONT_MIN, TITLE_FONT_MAX);
+            songTitleLetterSpacing = clamp(data.songTitleLetterSpacing, 0, 10);
+            songTitleAlign = normalizeAlign(data.songTitleAlign);
+            songTitleX = clamp(data.songTitleX, -400, 400);
+            songTitleY = clamp(data.songTitleY, -200, 200);
+            songTitleColorful = data.songTitleColorful;
+            songTitleIcon = normalizeIcon(data.songTitleIcon);
+            songTitleIconWidth = clamp(data.songTitleIconWidth, 0, 128);
+            songTitleIconHeight = clamp(data.songTitleIconHeight, 0, 128);
+            songTitleIconGap = clamp(data.songTitleIconGap, -8, 64);
+            songTitleIconOffsetY = clamp(data.songTitleIconOffsetY, -64, 64);
+            songTitleNoteColor = data.songTitleNoteColor;
+            songTitleNoteBounce = data.songTitleNoteBounce;
+            songTitleNoteBounceAmount = clamp(data.songTitleNoteBounceAmount, 0, 8);
+            songTitleNoteFollowsDelay = data.songTitleNoteFollowsDelay;
             yPercent = clamp(data.yPercent, 0.0, BAR_RATIO * 100.0);
             xPercent = clamp(data.xPercent, -50.0, 50.0);
             barSide = "top".equalsIgnoreCase(data.barSide) ? "top" : "bottom";
             keyCode = data.keyCode <= 0 ? 76 : data.keyCode;
             showTranslation = data.showTranslation;
+            skipChineseTranslation = data.skipChineseTranslation == null || data.skipChineseTranslation;
             translationOffset = clamp(data.translationOffset, -12, 24);
             translationSide = "above".equals(data.translationSide) ? "above" : "below";
             if (!data.sideMigrated) {
@@ -170,6 +244,28 @@ public final class CineLyricConfig {
         }
     }
 
+    /** Only the known title alignments survive a config file edit. */
+    public static String normalizeAlign(String value) {
+        if ("left".equalsIgnoreCase(value)) {
+            return "left";
+        }
+        if ("right".equalsIgnoreCase(value)) {
+            return "right";
+        }
+        if ("custom".equalsIgnoreCase(value)) {
+            return "custom";
+        }
+        return "center";
+    }
+
+    /** Only the note/none icon modes survive; album art was removed from the design. */
+    public static String normalizeIcon(String value) {
+        if ("note".equalsIgnoreCase(value) || "album".equalsIgnoreCase(value)) {
+            return "note";
+        }
+        return "none";
+    }
+
     /** Only the three known music-source values survive a config file edit. */
     public static String normalizeSource(String value) {
         if ("muonium".equalsIgnoreCase(value)) {
@@ -179,6 +275,20 @@ public final class CineLyricConfig {
             return "dango";
         }
         return "auto";
+    }
+
+    /** True when the lyric already contains a Han character. */
+    public static boolean containsChinese(String text) {
+        if (text == null || text.isEmpty()) {
+            return false;
+        }
+        for (int i = 0; i < text.length(); i++) {
+            char c = text.charAt(i);
+            if (c >= '\u4e00' && c <= '\u9fa5') {
+                return true;
+            }
+        }
+        return false;
     }
 
     static int clamp(int value, int min, int max) {

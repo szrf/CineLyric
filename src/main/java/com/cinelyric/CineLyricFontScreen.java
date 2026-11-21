@@ -44,7 +44,6 @@ public class CineLyricFontScreen extends CineLyricScreen {
         addRenderableWidget(Button.builder(Component.literal("重新扫描字体文件夹"), button -> {
             FontLibrary.reload();
             CineLyricConfig.ensureFontSelection();
-            TextTexture.clear();
             rebuildWidgets();
         }).bounds(left, 28, width, 20).build());
 
@@ -105,7 +104,6 @@ public class CineLyricFontScreen extends CineLyricScreen {
             } else {
                 CineLyricConfig.fontSecondary = value;
             }
-            TextTexture.clear();
             return;
         }
     }
@@ -124,10 +122,15 @@ public class CineLyricFontScreen extends CineLyricScreen {
 
         // Hints sit left of the screen centre: the subtitle moves, so corners can be masked.
         String line1 = "已读到 " + FontLibrary.count() + " 个字体，两行都能选「无」";
-        String line2 = "缺字顺序：主字体 → 副字体 → 现代化UI → 原版";
+        String line2 = "缺字顺序：主字体 → 副字体 → 原版（游戏自带字体）";
         int right = width / 2 - 12;
         graphics.drawString(font, line1, right - font.width(line1), height / 2 - 22, 0xF0F0F0, true);
         graphics.drawString(font, line2, right - font.width(line2), height / 2 - 10, 0xC8C8C8, true);
+        String warn1 = "⚠ 使用自定义字体可能会出现缺字现象";
+        String warn2 = "此问题作者不打算维护，也不打算修复";
+        int warnY = PANEL_BOTTOM + 10;
+        graphics.drawString(font, warn1, 12, warnY, 0xFFB040, false);
+        graphics.drawString(font, warn2, 12, warnY + 12, 0xFFB040, false);
         if (FontLibrary.count() == 0) {
             String none = "fonts 文件夹里还没有字体，点上面的「打开字体文件夹」";
             graphics.drawString(font, none, right - font.width(none), height / 2 + 2, 0xFF8080, false);
