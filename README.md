@@ -101,7 +101,4 @@ MIT，见 [LICENSE](LICENSE) 与 [协议说明.txt](协议说明.txt)。
 
 ## 📥 下载
 
-### 最新版本 v1.0.1
-
-- [CineLyric-1.0.1.jar](https://github.com/szrf/CineLyric/releases/download/v1.0.0/CineLyric-1.0.0.jar)
-- [查看完整版本列表](https://github.com/szrf/CineLyric/releases)
+- [查看全部历史版本](https://github.com/szrf/CineLyric/releases)
