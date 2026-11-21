@@ -99,6 +99,16 @@ CineLyric-NeoForge-1.21.1-1.0.2/
 - 歌名：`SongInfo` 用反射读 Muonium 的 `CloudMusic.currentlyPlaying` / Dango 的 `getShownTrack`，优先 `getMainTitle()`（Muonium 的 `getName()` 有时已带歌手），再拼歌手；`SongTitleRenderer` 同样用 `LyricTextRenderer` 的原版字形直接画，因此不会被 ModernUI 的 `drawInBatch` 覆盖。坐标原点是屏幕中心；左/右对齐时歌名块分别从中心向右/向左展开，自定义位置再叠加 X/Y，并隐藏变暗背景。歌名有独立 `songTitleLetterSpacing`，通过 `LyricTextRenderer` 的 spacing 重载传入，不会影响歌词和图标。前缀只有程序化 9×9 双音符贴图（不依赖可能缺失的 `particle/note.png`），可关彩色、可关跳动并单独调幅度，按时间浮动和 `HSB` 色相循环。彩虹模式逐字算色相。
 - 译文模块：`CineLyricTranslationScreen` 集中显示开关、独立字号、中文自动跳过、上下位置和像素微调；原文匹配 `\u4e00`–`\u9fa5` 时 `LyricSources.Line` 直接把译文清空，避免中文串到译文行。
 
+## 维护与反馈
+
+当前状态：1.0.2 为稳定版，源码已交社区维护；作者后续不再做功能迭代，仅处理影响启动/崩溃/安全的严重问题。
+
+报问题：在仓库 Issues 里提交，尽量附上 NeoForge 版本、日志（ logs/latest.log ）和复现步骤。
+
+提需求：同样走 Issue，用 label  enhancement  标记即可。
+
+想参与开发：clone 源码，按《AI维护与升级指南.md》配好环境后开发，改完提 Pull Request，说明改了什么、为什么改。
+
 ## 协议
 
 MIT，见 [LICENSE](LICENSE) 与 [协议说明.txt](协议说明.txt)。
