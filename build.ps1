@@ -4,7 +4,7 @@
 $ErrorActionPreference = 'Stop'
 
 $root = $PSScriptRoot
-$lib  = 'D:\已安装软件\娱乐软件\PCL2\.minecraft\libraries'
+$lib  = 'D:\PCL2\.minecraft\libraries'
 $javac = 'D:\JAVA\21\bin\javac.exe'
 $jar   = 'D:\JAVA\21\bin\jar.exe'
 
