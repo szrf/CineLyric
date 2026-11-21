@@ -98,9 +98,10 @@ MIT，见 [LICENSE](LICENSE) 与 [协议说明.txt](协议说明.txt)。
 - `neoforge.mods.toml` 的 `license` 字段同样是 `MIT`。
 - 在 GitHub 上建仓库时会自动识别根目录的 `LICENSE`，仓库页面会显示 **MIT license**。
 
+
 ## 📥 下载
 
-<!Download Latest Release>
-<!All Releases>
+### 最新版本 v1.0.1
 
-> 点击上方按钮下载最新版本，或查看全部历史版本。
+- [CineLyric-1.0.1.jar](https://github.com/szrf/CineLyric/releases/download/v1.0.0/CineLyric-1.0.0.jar)
+- [查看完整版本列表](https://github.com/szrf/CineLyric/releases)
